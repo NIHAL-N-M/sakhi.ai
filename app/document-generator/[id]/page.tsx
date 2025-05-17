@@ -25,10 +25,17 @@ interface SavedDocument {
   content?: string
 }
 
-export default function DocumentGeneratorForm({ params }: { params: { id: string } }) {
+// Temporarily using 'any' for diagnostics
+interface DocumentPageProps {
+  params: any; // Changed to any
+  searchParams?: any; // Changed to any
+}
+
+export default function DocumentGeneratorForm({ params, searchParams: rawSearchParams }: DocumentPageProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const editDocId = searchParams.get("edit")
+  const searchParamsHook = useSearchParams() // Renamed to avoid conflict with prop
+  const editDocId = searchParamsHook.get("edit") || (typeof rawSearchParams?.edit === 'string' ? rawSearchParams.edit : undefined);
+  const pageId = params?.id as string; // Assuming params.id will be a string
 
   const [step, setStep] = useState(1)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -96,7 +103,7 @@ export default function DocumentGeneratorForm({ params }: { params: { id: string
             pincode: extractValue(lines, "Pincode"),
             purpose: extractValue(lines, "Purpose"),
             details: extractValue(lines, "Details"),
-            documentType: documentTypes[params.id] || "",
+            documentType: documentTypes[pageId] || "", // Use pageId here
           }
 
           // Update form data with extracted values
@@ -112,7 +119,7 @@ export default function DocumentGeneratorForm({ params }: { params: { id: string
         console.error("Error loading document for editing:", error)
       }
     }
-  }, [editDocId, params.id])
+  }, [editDocId, pageId]) // Use pageId in dependencies
 
   // Helper function to extract values from document content
   const extractValue = (lines: string[], field: string): string => {
@@ -147,7 +154,7 @@ export default function DocumentGeneratorForm({ params }: { params: { id: string
       // Instead of making an API call, we'll generate the document locally
       // This avoids potential API errors while still providing functionality
 
-      const docType = documentTypes[params.id] || "Document"
+      const docType = documentTypes[pageId] || "Document"
       const currentDate = new Date().toLocaleDateString()
 
       // Generate document based on type
@@ -259,7 +266,7 @@ Place: ${formData.city || "[City]"}
     setIsDownloading(true)
 
     try {
-      const docType = documentTypes[params.id] || "Document"
+      const docType = documentTypes[pageId] || "Document"
       const fileName = `${docType}_${formData.purpose ? formData.purpose.replace(/\s+/g, "_") : "Document"}.pdf`
 
       // Create a new jsPDF instance
@@ -354,7 +361,7 @@ Place: ${formData.city || "[City]"}
     setIsSaving(true)
 
     try {
-      const docType = documentTypes[params.id] || "Document"
+      const docType = documentTypes[pageId] || "Document"
       const draftTitle = `${docType} - ${formData.purpose || "Draft"}`
 
       // Check if we're editing an existing document
@@ -413,7 +420,7 @@ Place: ${formData.city || "[City]"}
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Document Types
         </Link>
-        <h1 className="text-3xl font-bold text-black">Generate {documentTypes[params.id] || "Document"}</h1>
+        <h1 className="text-3xl font-bold text-black">Generate {documentTypes[pageId] || "Document"}</h1>
         <p className="mt-2 text-gray-600">Fill in the required information to generate your document</p>
       </div>
 
@@ -526,7 +533,7 @@ Place: ${formData.city || "[City]"}
                       onValueChange={(value) => handleSelectChange("documentType", value)}
                     >
                       <SelectTrigger id="documentType">
-                        <SelectValue placeholder={documentTypes[params.id] || "Select document type"} />
+                        <SelectValue placeholder={documentTypes[pageId] || "Select document type"} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="affidavit">Affidavit</SelectItem>
@@ -598,7 +605,7 @@ Place: ${formData.city || "[City]"}
                       <dl className="grid grid-cols-1 gap-x-4 gap-y-2">
                         <div>
                           <dt className="text-sm font-medium text-gray-500">Document Type</dt>
-                          <dd className="mt-1 text-sm text-black">{documentTypes[params.id] || "Not selected"}</dd>
+                          <dd className="mt-1 text-sm text-black">{documentTypes[pageId] || "Not selected"}</dd>
                         </div>
                         <div>
                           <dt className="text-sm font-medium text-gray-500">Purpose</dt>
@@ -659,7 +666,7 @@ Place: ${formData.city || "[City]"}
             <CardHeader>
               <CardTitle>Document Generated Successfully</CardTitle>
               <CardDescription>
-                Your {documentTypes[params.id]} has been generated. You can preview, edit, or download it as a PDF.
+                Your {documentTypes[pageId]} has been generated. You can preview, edit, or download it as a PDF.
               </CardDescription>
             </CardHeader>
             <CardContent>
